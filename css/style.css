@@ -201,6 +201,10 @@ img {
     font-weight: bold;
 }
 
+.hud-item[hidden] {
+    display: none;
+}
+
 .hud-icone {
     height: 18px;
     width: 18px;
@@ -238,6 +242,13 @@ img {
     height: 100%;
     width: 0%;
     background: linear-gradient(90deg, #4d8bff, #4dffb8);
+    transition: width 0.15s linear;
+}
+
+.hud-chefe-barra {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #ff2d55, #ff8a4d);
     transition: width 0.15s linear;
 }
 
@@ -300,6 +311,58 @@ img {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
+}
+
+.inimigo-drone-robo {
+    background-image: url(../img/tileset/inimigos/drone-robo.png);
+}
+
+.inimigo-nave-alien {
+    background-image: url(../img/tileset/inimigos/nave-alien.png);
+    width: 10%;
+}
+
+.inimigo-meteoro-gelo {
+    background-image: url(../img/tileset/inimigos/meteoro-gelo.png);
+}
+
+.chefe {
+    position: absolute;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(0 0 10px rgba(255, 45, 85, 0.6));
+}
+
+.item {
+    position: absolute;
+    width: 6%;
+    height: 8%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+}
+
+.item-combustivel {
+    background-image: url(../img/tileset/itens/item-combustivel.png);
+}
+
+.item-pontos {
+    background-image: url(../img/tileset/itens/item-pontos.png);
+}
+
+.item-powerup-arma {
+    background-image: url(../img/tileset/itens/item-powerup-arma.png);
+}
+
+.projetil-inimigo {
+    position: absolute;
+    width: 2.5%;
+    height: 2.5%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff, #ff2d55 60%, transparent 100%);
+    box-shadow: 0 0 6px 2px rgba(255, 45, 85, 0.8);
 }
 
 .projetil {

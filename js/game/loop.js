@@ -8,6 +8,9 @@ function clamp(valor, min, max) {
 // Limite direito propositalmente aquém de 100% (onde os inimigos entram em cena),
 // pra sempre sobrar espaço de tela entre a nave e o ponto de spawn dos inimigos.
 const LIMITE_DIREITA_NAVE_PCT = 70;
+const VELOCIDADE_ITEM_PCT_POR_SEGUNDO = 25;
+const TURRET_OFFSETS_CHEFE = [0.2, 0.5, 0.8];
+const INTERVALO_REFORCO_CHEFE_MS = 4000;
 
 export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogador, vidasIniciais, pontosIniciais = 0, onFaseCompleta, onGameOver, onSaiu }) {
     const boardEl = root.querySelector('.game-board');
@@ -51,7 +54,23 @@ export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogado
 
     const inimigosAtivos = [];
     const projeteisAtivos = [];
+    const projeteisInimigoAtivos = [];
+    const itensAtivos = [];
     const timelinePendente = [...fase.enemyTimeline];
+    const itemTimelinePendente = [...(fase.itemTimeline ?? [])];
+    const gabaritoReforco = fase.enemyTimeline[fase.enemyTimeline.length - 1] ?? {
+        tipo: 'asteroide', hp: 1, pontos: 10, velocidadePctPorSegundo: 30,
+    };
+
+    let lutaChefeAtiva = false;
+    let chefeAtivo = false;
+    let chefeEl = null;
+    let chefeHpAtual = 0;
+    let chefeXPct = 0;
+    let chefeYPct = 0;
+    let chefeCooldownMs = 0;
+    let chefeTurretIndex = 0;
+    let reforcoCooldownMs = 0;
 
     posicionar(naveEl, ship.xPct, ship.yPct);
 
@@ -74,6 +93,23 @@ export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogado
         posicionar(el, inimigo.xPct, inimigo.y);
     }
 
+    function spawnItem(def) {
+        const el = criarEntidadeDom('item item-' + def.tipo);
+        const item = { ...def, xPct: 100, el };
+        itensAtivos.push(item);
+        posicionar(el, item.xPct, item.y);
+    }
+
+    function aplicarEfeitoItem(item) {
+        if (item.tipo === 'combustivel') {
+            fuel = Math.min(fase.fuelStart, fuel + item.valor);
+        } else if (item.tipo === 'powerup-arma') {
+            trocarArma();
+        } else {
+            pontos += item.valor;
+        }
+    }
+
     function spawnProjetil() {
         const el = criarEntidadeDom('projetil');
         el.style.backgroundColor = armaAtual.cor;
@@ -90,11 +126,52 @@ export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogado
         posicionar(el, projetil.xPct, projetil.yPct);
     }
 
+    function spawnProjetilInimigo(yPct) {
+        const el = criarEntidadeDom('projetil-inimigo');
+        const projetil = {
+            xPct: chefeXPct,
+            yPct,
+            velocidade: fase.chefe.velocidadeProjetilPctPorSegundo,
+            el,
+        };
+        projeteisInimigoAtivos.push(projetil);
+        posicionar(el, projetil.xPct, projetil.yPct);
+    }
+
+    function iniciarLutaChefe() {
+        lutaChefeAtiva = true;
+        chefeAtivo = true;
+        chefeHpAtual = fase.chefe.hp;
+        chefeXPct = clamp(100 - fase.chefe.larguraPct - 2, 0, 100);
+        chefeYPct = clamp(50 - fase.chefe.alturaPct / 2, 0, 100 - fase.chefe.alturaPct);
+        chefeEl = criarEntidadeDom('chefe');
+        chefeEl.style.backgroundImage = `url(${fase.chefe.imagem})`;
+        chefeEl.style.width = fase.chefe.larguraPct + '%';
+        chefeEl.style.height = fase.chefe.alturaPct + '%';
+        posicionar(chefeEl, chefeXPct, chefeYPct);
+        chefeCooldownMs = fase.chefe.cadenciaMs;
+        reforcoCooldownMs = INTERVALO_REFORCO_CHEFE_MS;
+        hud.mostrarBarraChefe();
+    }
+
+    function derrotarChefe() {
+        chefeAtivo = false;
+        if (chefeEl) chefeEl.remove();
+        chefeEl = null;
+        pontos += fase.chefe.pontosRecompensa;
+        finalizarFaseCompleta();
+    }
+
     function limparEntidades() {
         for (const inimigo of inimigosAtivos) inimigo.el.remove();
         for (const projetil of projeteisAtivos) projetil.el.remove();
+        for (const projetil of projeteisInimigoAtivos) projetil.el.remove();
+        for (const item of itensAtivos) item.el.remove();
+        if (chefeEl) chefeEl.remove();
         inimigosAtivos.length = 0;
         projeteisAtivos.length = 0;
+        projeteisInimigoAtivos.length = 0;
+        itensAtivos.length = 0;
     }
 
     function sobrepoe(elA, elB) {
@@ -168,7 +245,13 @@ export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogado
         let multiplicadorAvanco = 1;
         if (inputState.direita) multiplicadorAvanco = fase.multiplicadorAcelerar;
         else if (inputState.esquerda) multiplicadorAvanco = fase.multiplicadorFrear;
-        progressoPct = clamp(progressoPct + fase.baseAvancoPctPorSegundo * multiplicadorAvanco * dt, 0, 100);
+
+        if (fase.chefe && !lutaChefeAtiva && progressoPct >= fase.chefeTriggerProgressPct) {
+            iniciarLutaChefe();
+        }
+        if (!lutaChefeAtiva) {
+            progressoPct = clamp(progressoPct + fase.baseAvancoPctPorSegundo * multiplicadorAvanco * dt, 0, 100);
+        }
 
         fuel = Math.max(0, fuel - fase.fuelDrainPerSecond * dt);
         if (fuel <= 0) {
@@ -181,6 +264,28 @@ export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogado
             if (progressoPct >= timelinePendente[i].atProgressPct) {
                 spawnInimigo(timelinePendente[i]);
                 timelinePendente.splice(i, 1);
+            }
+        }
+
+        for (let i = itemTimelinePendente.length - 1; i >= 0; i--) {
+            if (progressoPct >= itemTimelinePendente[i].atProgressPct) {
+                spawnItem(itemTimelinePendente[i]);
+                itemTimelinePendente.splice(i, 1);
+            }
+        }
+
+        if (lutaChefeAtiva && chefeAtivo) {
+            chefeCooldownMs -= dt * 1000;
+            if (chefeCooldownMs <= 0) {
+                const yTiro = clamp(chefeYPct + fase.chefe.alturaPct * TURRET_OFFSETS_CHEFE[chefeTurretIndex], 0, 100);
+                spawnProjetilInimigo(yTiro);
+                chefeTurretIndex = (chefeTurretIndex + 1) % TURRET_OFFSETS_CHEFE.length;
+                chefeCooldownMs = fase.chefe.cadenciaMs;
+            }
+            reforcoCooldownMs -= dt * 1000;
+            if (reforcoCooldownMs <= 0) {
+                spawnInimigo({ ...gabaritoReforco, y: 10 + Math.random() * 80 });
+                reforcoCooldownMs = INTERVALO_REFORCO_CHEFE_MS;
             }
         }
 
@@ -207,6 +312,40 @@ export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogado
         }
         if (!ativo) return;
 
+        for (let i = itensAtivos.length - 1; i >= 0 && ativo; i--) {
+            const item = itensAtivos[i];
+            item.xPct -= VELOCIDADE_ITEM_PCT_POR_SEGUNDO * dt;
+            posicionar(item.el, item.xPct, item.y);
+            if (item.xPct < -15) {
+                item.el.remove();
+                itensAtivos.splice(i, 1);
+                continue;
+            }
+            if (sobrepoe(naveEl, item.el)) {
+                aplicarEfeitoItem(item);
+                item.el.remove();
+                itensAtivos.splice(i, 1);
+            }
+        }
+        if (!ativo) return;
+
+        for (let i = projeteisInimigoAtivos.length - 1; i >= 0 && ativo; i--) {
+            const projetil = projeteisInimigoAtivos[i];
+            projetil.xPct -= projetil.velocidade * dt;
+            posicionar(projetil.el, projetil.xPct, projetil.yPct);
+            if (projetil.xPct < -10) {
+                projetil.el.remove();
+                projeteisInimigoAtivos.splice(i, 1);
+                continue;
+            }
+            if (sobrepoe(naveEl, projetil.el)) {
+                projetil.el.remove();
+                projeteisInimigoAtivos.splice(i, 1);
+                perderVida();
+            }
+        }
+        if (!ativo) return;
+
         for (let p = projeteisAtivos.length - 1; p >= 0; p--) {
             const projetil = projeteisAtivos[p];
             projetil.xPct += projetil.velocidade * dt;
@@ -216,18 +355,29 @@ export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogado
                 projeteisAtivos.splice(p, 1);
                 continue;
             }
+            let atingiu = false;
             for (let i = inimigosAtivos.length - 1; i >= 0; i--) {
                 const inimigo = inimigosAtivos[i];
                 if (sobrepoe(projetil.el, inimigo.el)) {
                     inimigo.hpAtual -= projetil.dano;
                     projetil.el.remove();
                     projeteisAtivos.splice(p, 1);
+                    atingiu = true;
                     if (inimigo.hpAtual <= 0) {
                         pontos += inimigo.pontos;
                         inimigo.el.remove();
                         inimigosAtivos.splice(i, 1);
                     }
                     break;
+                }
+            }
+            if (!atingiu && chefeAtivo && chefeEl && sobrepoe(projetil.el, chefeEl)) {
+                chefeHpAtual -= projetil.dano;
+                projetil.el.remove();
+                projeteisAtivos.splice(p, 1);
+                if (chefeHpAtual <= 0) {
+                    derrotarChefe();
+                    return;
                 }
             }
         }
@@ -239,9 +389,10 @@ export function iniciarFase({ root, fase, nave, armas, armaInicialId, nomeJogado
             fuelPct: (fuel / fase.fuelStart) * 100,
             progressoPct,
             armaNome: armaAtual.nome,
+            chefeHpPct: lutaChefeAtiva && fase.chefe ? clamp((chefeHpAtual / fase.chefe.hp) * 100, 0, 100) : null,
         });
 
-        if (ativo && progressoPct >= 100) {
+        if (ativo && !fase.chefe && progressoPct >= 100) {
             finalizarFaseCompleta();
         }
     }

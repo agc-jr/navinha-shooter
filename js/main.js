@@ -1,5 +1,5 @@
 import * as State from './state.js';
-import { getShips, getWeapons, getPhases, getShipById } from './data/index.js';
+import { loadContentDb, getShips, getWeapons, getPhases, getShipById } from './data/content-repo.js';
 import { iniciarFase } from './game/loop.js';
 
 const appRoot = document.querySelector('.app');
@@ -13,7 +13,7 @@ const listaFases = document.querySelector('.lista-fases');
 const listaRanking = document.querySelector('.lista-ranking');
 const telaJogoRoot = document.querySelector('[data-screen="jogo"]');
 
-let naveSelecionadaId = getShips()[0].id;
+let naveSelecionadaId = null;
 
 function atualizarBotaoSom() {
     const mutado = State.isMuted();
@@ -81,33 +81,33 @@ function iniciarPartida(profile, fase) {
         pontosIniciais: profile.pontosAcumulados,
         onFaseCompleta: ({ pontos, bonus, vidasRestantes }) => mostrarFaseCompleta(profile, fase, pontos, bonus, vidasRestantes),
         onGameOver: ({ pontos }) => finalizarJogo(profile, pontos),
-        onSaiu: ({ pontos, vidasRestantes }) => {
+        onSaiu: async ({ pontos, vidasRestantes }) => {
             profile.vidas = vidasRestantes;
             profile.pontosAcumulados = pontos;
-            State.saveProfile(profile);
+            await State.saveProfile(profile);
             mostrarTelaFases(profile);
         },
     });
 }
 
-function mostrarFaseCompleta(profile, fase, pontos, bonus, vidasRestantes) {
+async function mostrarFaseCompleta(profile, fase, pontos, bonus, vidasRestantes) {
     document.querySelector('.fc-pontos').textContent = pontos;
     document.querySelector('.fc-bonus').textContent = bonus;
     profile.vidas = vidasRestantes;
     profile.pontosAcumulados = pontos;
     const proximaFase = getPhases().find((f) => f.id === fase.id + 1);
     if (proximaFase) {
-        State.desbloquearFase(profile, proximaFase.id);
+        await State.desbloquearFase(profile, proximaFase.id);
     } else {
-        State.saveProfile(profile);
+        await State.saveProfile(profile);
     }
     document.querySelector('.botao-continuar-fases').onclick = () => mostrarTelaFases(profile);
     State.showScreen('fase-completa');
 }
 
-function finalizarJogo(profile, pontos) {
-    State.addRankingEntry(profile.nome, pontos);
-    State.clearProfile();
+async function finalizarJogo(profile, pontos) {
+    await State.addRankingEntry(profile.nome, pontos);
+    await State.clearProfile();
     document.querySelector('.go-pontos').textContent = pontos;
     document.querySelector('.botao-ver-ranking').onclick = () => {
         atualizarBotaoContinuar();
@@ -132,33 +132,41 @@ function mostrarRanking() {
     State.showScreen('ranking');
 }
 
-document.querySelector('[data-acao="iniciar"]').addEventListener('click', mostrarTelaPerfil);
-document.querySelector('[data-acao="continuar"]').addEventListener('click', () => {
-    const profile = State.loadProfile();
-    if (!profile) return;
-    mostrarTelaFases(profile);
-});
-document.querySelector('[data-acao="ranking"]').addEventListener('click', mostrarRanking);
-botaoSom.addEventListener('click', () => {
-    State.setMuted(!State.isMuted());
-    atualizarBotaoSom();
-});
+async function init() {
+    await Promise.all([State.loadPlayerDb(), loadContentDb()]);
 
-document.querySelectorAll('[data-voltar]').forEach((botao) => {
-    botao.addEventListener('click', () => {
-        atualizarBotaoContinuar();
-        State.showScreen(botao.dataset.voltar);
+    naveSelecionadaId = getShips()[0].id;
+
+    document.querySelector('[data-acao="iniciar"]').addEventListener('click', mostrarTelaPerfil);
+    document.querySelector('[data-acao="continuar"]').addEventListener('click', () => {
+        const profile = State.loadProfile();
+        if (!profile) return;
+        mostrarTelaFases(profile);
     });
-});
+    document.querySelector('[data-acao="ranking"]').addEventListener('click', mostrarRanking);
+    botaoSom.addEventListener('click', () => {
+        State.setMuted(!State.isMuted());
+        atualizarBotaoSom();
+    });
 
-document.querySelector('.botao-confirmar-perfil').addEventListener('click', () => {
-    const nomeInput = document.querySelector('.input-nome');
-    const nome = nomeInput.value.trim() || 'Piloto';
-    const arma = getWeapons()[0];
-    const profile = State.createProfile(nome, naveSelecionadaId, arma.id);
-    mostrarTelaFases(profile);
-});
+    document.querySelectorAll('[data-voltar]').forEach((botao) => {
+        botao.addEventListener('click', () => {
+            atualizarBotaoContinuar();
+            State.showScreen(botao.dataset.voltar);
+        });
+    });
 
-atualizarBotaoSom();
-atualizarBotaoContinuar();
-State.showScreen('menu');
+    document.querySelector('.botao-confirmar-perfil').addEventListener('click', async () => {
+        const nomeInput = document.querySelector('.input-nome');
+        const nome = nomeInput.value.trim() || 'Piloto';
+        const arma = getWeapons()[0];
+        const profile = await State.createProfile(nome, naveSelecionadaId, arma.id);
+        mostrarTelaFases(profile);
+    });
+
+    atualizarBotaoSom();
+    atualizarBotaoContinuar();
+    State.showScreen('menu');
+}
+
+init();

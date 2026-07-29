@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <title>Navinha — Admin de Conteúdo</title>
+        <style>
+            body { font-family: sans-serif; margin: 1.5rem; background: #1b1b24; color: #eee; }
+            h1 { margin-top: 0; }
+            header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+            section { background: #26263380; border: 1px solid #3a3a4a; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.85rem; }
+            th, td { border-bottom: 1px solid #3a3a4a; padding: 0.35rem 0.5rem; text-align: left; }
+            form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+            form input { padding: 0.3rem 0.4rem; border-radius: 4px; border: 1px solid #555; background: #111; color: #eee; }
+            form input[type="text"], form input:not([type]) { min-width: 8rem; }
+            button { cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 4px; border: 1px solid #555; background: #333; color: #eee; }
+            button:hover { background: #444; }
+            #botao-exportar { background: #2e7d32; border-color: #2e7d32; font-weight: bold; }
+            #painel-inimigos { margin-top: 1rem; border-top: 1px dashed #555; padding-top: 1rem; }
+        </style>
+        <script src="./js/vendor/sql.js/sql-wasm.js"></script>
+        <script src="./js/admin/main.js" type="module"></script>
+    </head>
+    <body>
+        <header>
+            <h1>Admin de Conteúdo — Navinha</h1>
+            <button id="botao-exportar" type="button">Baixar banco atualizado (content.sqlite)</button>
+        </header>
+
+        <section id="secao-naves">
+            <h2>Naves</h2>
+            <table id="tabela-naves">
+                <thead>
+                    <tr><th>ID</th><th>Nome</th><th>Imagem</th><th>Vel. %/s</th><th>Larg. %</th><th>Alt. %</th><th>Ações</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <form id="form-nave">
+                <input name="id" placeholder="id (ex: foguete-azul)" required>
+                <input name="nome" placeholder="Nome" required>
+                <input name="imagem" placeholder="./img/nave.png" required>
+                <input name="imagemExplosao" placeholder="./img/naveExplodindo.png" required>
+                <input name="velocidadePctPorSegundo" type="number" step="any" placeholder="Velocidade %/s" required>
+                <input name="larguraPct" type="number" step="any" placeholder="Largura %" required>
+                <input name="alturaPct" type="number" step="any" placeholder="Altura %" required>
+                <button type="submit">Salvar Nave</button>
+                <button type="button" id="botao-limpar-nave">Novo</button>
+            </form>
+        </section>
+
+        <section id="secao-armas">
+            <h2>Armas</h2>
+            <table id="tabela-armas">
+                <thead>
+                    <tr><th>ID</th><th>Nome</th><th>Cadência (ms)</th><th>Dano</th><th>Vel. %/s</th><th>Cor</th><th>Ações</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <form id="form-arma">
+                <input name="id" placeholder="id (ex: tiro-duplo)" required>
+                <input name="nome" placeholder="Nome" required>
+                <input name="cadenciaMs" type="number" step="any" placeholder="Cadência (ms)" required>
+                <input name="dano" type="number" step="any" placeholder="Dano" required>
+                <input name="velocidadePctPorSegundo" type="number" step="any" placeholder="Velocidade %/s" required>
+                <input name="larguraPct" type="number" step="any" placeholder="Largura %" required>
+                <input name="alturaPct" type="number" step="any" placeholder="Altura %" required>
+                <input name="cor" placeholder="#rrggbb" required>
+                <button type="submit">Salvar Arma</button>
+                <button type="button" id="botao-limpar-arma">Novo</button>
+            </form>
+        </section>
+
+        <section id="secao-chefes">
+            <h2>Chefes</h2>
+            <table id="tabela-chefes">
+                <thead>
+                    <tr><th>ID</th><th>Nome</th><th>Imagem</th><th>HP</th><th>Dano tiro</th><th>Cadência (ms)</th><th>Pontos</th><th>Ações</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <form id="form-chefe">
+                <input name="id" placeholder="id (ex: chefe-fase-final)" required>
+                <input name="nome" placeholder="Nome" required>
+                <input name="imagem" placeholder="./img/tileset/chefes/chefe.png" required>
+                <input name="hp" type="number" step="any" placeholder="HP" required>
+                <input name="danoProjetil" type="number" step="any" placeholder="Dano do tiro" required>
+                <input name="cadenciaMs" type="number" step="any" placeholder="Cadência (ms)" required>
+                <input name="velocidadeProjetilPctPorSegundo" type="number" step="any" placeholder="Vel. tiro %/s" required>
+                <input name="pontosRecompensa" type="number" step="any" placeholder="Pontos ao derrotar" required>
+                <input name="larguraPct" type="number" step="any" placeholder="Largura %" required>
+                <input name="alturaPct" type="number" step="any" placeholder="Altura %" required>
+                <button type="submit">Salvar Chefe</button>
+                <button type="button" id="botao-limpar-chefe">Novo</button>
+            </form>
+        </section>
+
+        <section id="secao-fases">
+            <h2>Fases</h2>
+            <table id="tabela-fases">
+                <thead>
+                    <tr><th>ID</th><th>Nome</th><th>Fundo</th><th>Chefe</th><th>Ações</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <form id="form-fase">
+                <input name="id" type="number" placeholder="id (ex: 3)" required>
+                <input name="nome" placeholder="Nome da fase" required>
+                <input name="background" placeholder="./img/fundo.png" required>
+                <input name="baseAvancoPctPorSegundo" type="number" step="any" placeholder="Avanço base %/s" required>
+                <input name="multiplicadorAcelerar" type="number" step="any" placeholder="Mult. acelerar" required>
+                <input name="multiplicadorFrear" type="number" step="any" placeholder="Mult. frear" required>
+                <input name="fuelStart" type="number" step="any" placeholder="Combustível inicial" required>
+                <input name="fuelDrainPerSecond" type="number" step="any" placeholder="Consumo/s" required>
+                <input name="fuelBonusFactor" type="number" step="any" placeholder="Fator bônus" required>
+                <input name="chefeId" placeholder="id do chefe (opcional)">
+                <input name="chefeTriggerProgressPct" type="number" step="any" placeholder="% gatilho do chefe (opcional)">
+                <button type="submit">Salvar Fase</button>
+                <button type="button" id="botao-limpar-fase">Nova</button>
+            </form>
+
+            <div id="painel-inimigos" hidden>
+                <h3>Conteúdo da fase: <span id="fase-selecionada-nome"></span></h3>
+
+                <h4>Inimigos</h4>
+                <table id="tabela-inimigos">
+                    <thead>
+                        <tr><th>% Progresso</th><th>Tipo</th><th>Y (%)</th><th>HP</th><th>Pontos</th><th>Vel. %/s</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <form id="form-inimigo">
+                    <input type="hidden" name="inimigoId">
+                    <input name="atProgressPct" type="number" step="any" placeholder="% Progresso" required>
+                    <input name="tipo" placeholder="Tipo (ex: asteroide)" required>
+                    <input name="y" type="number" step="any" placeholder="Y (%)" required>
+                    <input name="hp" type="number" step="any" placeholder="HP" required>
+                    <input name="pontos" type="number" step="any" placeholder="Pontos" required>
+                    <input name="velocidadePctPorSegundo" type="number" step="any" placeholder="Velocidade %/s" required>
+                    <button type="submit">Salvar Inimigo</button>
+                    <button type="button" id="botao-limpar-inimigo">Novo</button>
+                </form>
+
+                <h4>Itens bônus</h4>
+                <table id="tabela-itens">
+                    <thead>
+                        <tr><th>% Progresso</th><th>Tipo</th><th>Y (%)</th><th>Valor</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <form id="form-item">
+                    <input type="hidden" name="itemId">
+                    <input name="atProgressPct" type="number" step="any" placeholder="% Progresso" required>
+                    <select name="tipo" required>
+                        <option value="pontos">pontos</option>
+                        <option value="combustivel">combustivel</option>
+                        <option value="powerup-arma">powerup-arma</option>
+                    </select>
+                    <input name="y" type="number" step="any" placeholder="Y (%)" required>
+                    <input name="valor" type="number" step="any" placeholder="Valor (pontos/combustível)" required>
+                    <button type="submit">Salvar Item</button>
+                    <button type="button" id="botao-limpar-item">Novo</button>
+                </form>
+            </div>
+        </section>
+    </body>
+</html>

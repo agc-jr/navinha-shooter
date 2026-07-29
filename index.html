@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
         <link rel="stylesheet" href="./css/style.css">
+        <script src="./js/vendor/sql.js/sql-wasm.js"></script>
         <script src="./js/main.js" type="module"></script>
 
         <link rel="shortcut icon" href="./img/favicon.ico" />
@@ -76,6 +77,10 @@
                     <div class="hud-item">
                         <span class="hud-label">Arma</span>
                         <span class="hud-arma-valor">-</span>
+                    </div>
+                    <div class="hud-item hud-item-barra hud-item-chefe" hidden>
+                        <span class="hud-label">Chefe</span>
+                        <div class="hud-barra-fundo"><div class="hud-chefe-barra"></div></div>
                     </div>
                     <button type="button" class="botao-desistir">Desistir</button>
                 </div>
