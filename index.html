@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <link rel="stylesheet" href="./css/style.css">
+        <script src="./js/main.js" type="module"></script>
+
+        <link rel="shortcut icon" href="./img/favicon.ico" />
+
+        <title>Navinha</title>
+    </head>
+
+    <body>
+        <audio id="backgroundMusic" loop>
+            <source src="./music/background.mp3" type="audio/mp3">
+            Seu navegador não suporta o elemento de áudio.
+        </audio>
+
+        <main class="app">
+
+            <section class="tela tela-menu" data-screen="menu">
+                <h1 class="titulo-jogo">NAVINHA</h1>
+                <nav class="menu-botoes">
+                    <button type="button" class="botao-menu" data-acao="iniciar">Iniciar</button>
+                    <button type="button" class="botao-menu" data-acao="continuar">Continuar</button>
+                    <button type="button" class="botao-menu" data-acao="ranking">Ranking</button>
+                    <button type="button" class="botao-menu botao-som" data-acao="som">Som: Ligado</button>
+                </nav>
+            </section>
+
+            <section class="tela tela-perfil" data-screen="perfil">
+                <h2>Novo Piloto</h2>
+                <label class="campo-nome">
+                    Nome do piloto
+                    <input type="text" class="input-nome" maxlength="16" placeholder="Digite seu nome" />
+                </label>
+                <div class="lista-naves"></div>
+                <div class="botoes-tela">
+                    <button type="button" class="botao-voltar" data-voltar="menu">Voltar</button>
+                    <button type="button" class="botao-confirmar-perfil">Confirmar</button>
+                </div>
+            </section>
+
+            <section class="tela tela-fases" data-screen="fases">
+                <h2>Selecione a Fase</h2>
+                <div class="lista-fases"></div>
+                <div class="botoes-tela">
+                    <button type="button" class="botao-voltar" data-voltar="menu">Voltar ao Menu</button>
+                </div>
+            </section>
+
+            <section class="tela tela-jogo" data-screen="jogo">
+                <div class="hud-superior">
+                    <div class="hud-item">
+                        <span class="hud-label">Piloto</span>
+                        <span class="hud-nome-valor">-</span>
+                    </div>
+                    <div class="hud-item">
+                        <img src="./img/foguete.png" class="hud-icone" alt="Vidas" />
+                        <span class="hud-vidas-valor">3</span>
+                    </div>
+                    <div class="hud-item">
+                        <img src="./img/asteroid.png" class="hud-icone" alt="Pontos" />
+                        <span class="hud-pontos-valor">0</span>
+                    </div>
+                    <div class="hud-item hud-item-barra">
+                        <span class="hud-label">Combustível</span>
+                        <div class="hud-barra-fundo"><div class="hud-combustivel-barra"></div></div>
+                    </div>
+                    <div class="hud-item hud-item-barra">
+                        <span class="hud-label">Fase</span>
+                        <div class="hud-barra-fundo"><div class="hud-progresso-barra"></div></div>
+                    </div>
+                    <div class="hud-item">
+                        <span class="hud-label">Arma</span>
+                        <span class="hud-arma-valor">-</span>
+                    </div>
+                    <button type="button" class="botao-desistir">Desistir</button>
+                </div>
+
+                <div class="game-board">
+                    <img src="" class="fundo" alt="" />
+                    <div class="nave"></div>
+                </div>
+
+                <div class="controles-inferiores">
+                    <div class="dpad">
+                        <button type="button" class="dpad-botao dpad-cima" data-direcao="cima">▲</button>
+                        <button type="button" class="dpad-botao dpad-esquerda" data-direcao="esquerda">◀</button>
+                        <button type="button" class="dpad-botao dpad-direita" data-direcao="direita">▶</button>
+                        <button type="button" class="dpad-botao dpad-baixo" data-direcao="baixo">▼</button>
+                    </div>
+                    <div class="acoes">
+                        <button type="button" class="botao-trocar-arma">Trocar Arma</button>
+                        <button type="button" class="botao-atirar">ATIRAR</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tela tela-fase-completa" data-screen="fase-completa">
+                <h2>Fase Concluída!</h2>
+                <p>Pontuação total: <span class="fc-pontos">0</span></p>
+                <p>Bônus de combustível: <span class="fc-bonus">0</span></p>
+                <button type="button" class="botao-continuar-fases">Continuar</button>
+            </section>
+
+            <section class="tela tela-game-over" data-screen="game-over">
+                <h2 class="txt-game-over">GAME OVER</h2>
+                <p>Pontuação final: <span class="go-pontos">0</span></p>
+                <button type="button" class="botao-ver-ranking">Ver Ranking</button>
+            </section>
+
+            <section class="tela tela-ranking" data-screen="ranking">
+                <h2>Ranking</h2>
+                <ol class="lista-ranking"></ol>
+                <div class="botoes-tela">
+                    <button type="button" class="botao-voltar" data-voltar="menu">Voltar ao Menu</button>
+                </div>
+            </section>
+
+        </main>
+    </body>
+
+</html>
