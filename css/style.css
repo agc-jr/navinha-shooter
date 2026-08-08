@@ -313,6 +313,10 @@ img {
     background-position: center;
 }
 
+.inimigo-asteroide-cinza {
+    background-image: url(../img/tileset/inimigos/asteroide-cinza.png);
+}
+
 .inimigo-drone-robo {
     background-image: url(../img/tileset/inimigos/drone-robo.png);
 }
